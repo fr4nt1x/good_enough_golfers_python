@@ -23,11 +23,14 @@ class GeneticSolver:
         self.weights = [[0 for i in range(
             0, self.totalPeople)] for j in range(0, self.totalPeople)]
 
+    def scoreGroup(self, group):
+        return sum([int(math.pow(self.weights[pair[0]][pair[1]], 2))
+                    for pair in itertools.combinations(group, 2)])
+
     def scoreGroups(self, groups):
         groupScores = []
         for group in groups:
-            groupScore = sum([int(math.pow(self.weights[pair[0]][pair[1]], 2))
-                              for pair in itertools.combinations(group, 2)])
+            groupScore = self.scoreGroup(group)
             # groupScore = max([int(self.weights[pair[0]][pair[1]])
             #                   for pair in itertools.combinations(group, 2)])
             groupScores.append(groupScore
@@ -73,14 +76,17 @@ class GeneticSolver:
                 option[self.OPTIONS_GROUPS], option[self.OPTIONS_GROUPSCORES]))
             groupsZippedSorted = sorted(
                 groupsZipped, key=lambda t: t[1], reverse=True)
-            groupsOnly = [group[0] for group in groupsZippedSorted]
+            oldTotal = option[self.OPTIONS_TOTALSCORE]
+            groupScores = [zipped[1]
+                           for zipped in groupsZippedSorted]
             for personIndex in range(0, self.sizeOfGroups):
                 for swapGroupIndex in range(1, self.numberOfGroups):
                     for swapPersonIndex in range(0, self.sizeOfGroups):
-                        groupsOnlyCopy = list(groupsOnly)
+                        groupsOnlyCopy = [group[0]
+                                          for group in groupsZippedSorted]
 
-                        group1 = groupsOnly[0]
-                        group2 = groupsOnly[swapGroupIndex]
+                        group1 = groupsZippedSorted[0][0]
+                        group2 = groupsZippedSorted[swapGroupIndex][0]
                         newGroup1 = list(group1)
                         newGroup1[personIndex] = group2[swapPersonIndex]
                         newGroup2 = list(group2)
@@ -89,12 +95,17 @@ class GeneticSolver:
                         groupsOnlyCopy[0] = tuple(newGroup1)
                         groupsOnlyCopy[swapGroupIndex] = tuple(newGroup2)
 
-                        # groupsOnlyCopy[0][personIndex] = groupsOnly[swapGroupIndex][swapPersonIndex]
-                        # groupsOnlyCopy[swapGroupIndex][swapPersonIndex] = groupsOnly[0][personIndex]
-                        groupScores = self.scoreGroups(groupsOnlyCopy)
-                        totalScore = sum(groupScores)
-                        mutatedOptions.append(
-                            {self.OPTIONS_GROUPS: groupsOnlyCopy, self.OPTIONS_GROUPSCORES: groupScores, self.OPTIONS_TOTALSCORE: totalScore})
+                        groupScoresCopy = groupScores[:]
+                        groupScoresCopy[0] = self.scoreGroup(newGroup1)
+                        groupScoresCopy[swapGroupIndex] = self.scoreGroup(
+                            newGroup2)
+                        totalScore = sum(groupScoresCopy)
+                        # Later only all options with the best score will be evaluated
+                        # as we know at least one option score we can eliminate everything that
+                        # has a worse score
+                        if totalScore <= oldTotal:
+                            mutatedOptions.append(
+                                {self.OPTIONS_GROUPS: groupsOnlyCopy, self.OPTIONS_GROUPSCORES: groupScoresCopy, self.OPTIONS_TOTALSCORE: totalScore})
             # Random mutations for each option
             mutatedOptions = mutatedOptions + (self.generateRandomOptions(
                 self.RANDOM_MUTATIONS))
