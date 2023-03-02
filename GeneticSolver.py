@@ -22,17 +22,17 @@ class GeneticSolver:
         # will change all rows
         self.weights = [[0 for i in range(
             0, self.totalPeople)] for j in range(0, self.totalPeople)]
+        self.weightsSquared = [[0 for i in range(
+            0, self.totalPeople)] for j in range(0, self.totalPeople)]
 
     def scoreGroup(self, group):
-        return sum([int(math.pow(self.weights[pair[0]][pair[1]], 2))
+        return sum([int(self.weightsSquared[pair[0]][pair[1]])
                     for pair in itertools.combinations(group, 2)])
 
     def scoreGroups(self, groups):
         groupScores = []
         for group in groups:
             groupScore = self.scoreGroup(group)
-            # groupScore = max([int(self.weights[pair[0]][pair[1]])
-            #                   for pair in itertools.combinations(group, 2)])
             groupScores.append(groupScore
                                )
         return groupScores
@@ -65,6 +65,17 @@ class GeneticSolver:
                 index1 = pair[1]
                 self.weights[index0][index1] = self.weights[index0][index1]+1
                 self.weights[index1][index0] = self.weights[index0][index1]
+                squared = int(math.pow(
+                    self.weights[index0][index1], 2))
+                self.weightsSquared[index0][index1] = squared
+                self.weightsSquared[index1][index0] = squared
+
+    def switchGroups(self, group1, group2, personIndex, swapPersonIndex):
+        newGroup1 = list(group1)
+        newGroup1[personIndex] = group2[swapPersonIndex]
+        newGroup2 = list(group2)
+        newGroup2[swapPersonIndex] = group1[personIndex]
+        return newGroup1, newGroup2
 
     def generateMutations(self, groupOptions):
         mutatedOptions = []
@@ -87,10 +98,8 @@ class GeneticSolver:
 
                         group1 = groupsZippedSorted[0][0]
                         group2 = groupsZippedSorted[swapGroupIndex][0]
-                        newGroup1 = list(group1)
-                        newGroup1[personIndex] = group2[swapPersonIndex]
-                        newGroup2 = list(group2)
-                        newGroup2[swapPersonIndex] = group1[personIndex]
+                        newGroup1, newGroup2 = self.switchGroups(
+                            group1, group2, personIndex, swapPersonIndex)
 
                         groupsOnlyCopy[0] = tuple(newGroup1)
                         groupsOnlyCopy[swapGroupIndex] = tuple(newGroup2)
