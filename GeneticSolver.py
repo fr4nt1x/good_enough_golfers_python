@@ -4,10 +4,25 @@ import math
 
 
 class GeneticSolver:
+    """
+    Class for solving the social golfer problem.
+    Uses only standard library functions.
+
+    returns a list of dicts.
+    each dict contains a key self.OPTIONS_GROUPS and self.OPTIONS_TOTALSCORE.
+    self.OPTIONS_GROUPS contains a list containing the groups and
+    self.OPTIONS_TOTALSCORE contains the score.
+
+    persons are integers from 0 to sizeOfGroups*numberOfGroups
+
+    """
+
+    # Constants
     GENERATIONS = 30
     INITIAL_POPULATION = 5
     RANDOM_MUTATIONS = 2
     MAX_DESCENDANTS_TO_EXPLORE = 100
+    # dict keys used later
     OPTIONS_GROUPS = "groups"
     OPTIONS_GROUPSCORES = "groupScores"
     OPTIONS_TOTALSCORE = "totalScore"
@@ -20,19 +35,16 @@ class GeneticSolver:
         # use list comprehension the list with different list objects
         # do not use [[0]*self.totalPeople]*self.totalPeople as then the changing one row element
         # will change all rows
-        self.weights = [[0 for i in range(
-            0, self.totalPeople)] for j in range(0, self.totalPeople)]
-        self.weightsSquared = [[0 for i in range(
-            0, self.totalPeople)] for j in range(0, self.totalPeople)]
-
-    def scoreGroup(self, group):
-        return sum([int(self.weightsSquared[pair[0]][pair[1]])
-                    for pair in itertools.combinations(group, 2)])
+        self.weights = [[0 for _ in range(
+            0, self.totalPeople)] for _ in range(0, self.totalPeople)]
+        self.weightsSquared = [[0 for _ in range(
+            0, self.totalPeople)] for _ in range(0, self.totalPeople)]
 
     def scoreGroups(self, groups):
         groupScores = []
         for group in groups:
-            groupScore = self.scoreGroup(group)
+            groupScore = sum([int(self.weightsSquared[pair[0]][pair[1]])
+                              for pair in itertools.combinations(group, 2)])
             groupScores.append(groupScore
                                )
         return groupScores
@@ -77,6 +89,19 @@ class GeneticSolver:
         newGroup2[swapPersonIndex] = group1[personIndex]
         return newGroup1, newGroup2
 
+    def scoreMutatedGroup(self, orgGroup, newGroup, oldScore, orgPersonIndex):
+        score = oldScore
+        for i in range(0, self.sizeOfGroups):
+            if i == orgPersonIndex:
+                continue
+            score += self.weightsSquared[newGroup[orgPersonIndex]][newGroup[i]]
+
+        for i in range(0, self.sizeOfGroups):
+            if i == orgPersonIndex:
+                continue
+            score -= self.weightsSquared[orgGroup[orgPersonIndex]][orgGroup[i]]
+        return score
+
     def generateMutations(self, groupOptions):
         mutatedOptions = []
         for option in groupOptions:
@@ -105,9 +130,12 @@ class GeneticSolver:
                         groupsOnlyCopy[swapGroupIndex] = tuple(newGroup2)
 
                         groupScoresCopy = groupScores[:]
-                        groupScoresCopy[0] = self.scoreGroup(newGroup1)
-                        groupScoresCopy[swapGroupIndex] = self.scoreGroup(
-                            newGroup2)
+
+                        groupScoresCopy[0] = self.scoreMutatedGroup(
+                            group1, newGroup1, groupScores[0], personIndex)
+
+                        groupScoresCopy[swapGroupIndex] = self.scoreMutatedGroup(
+                            group2, newGroup2, groupScores[swapGroupIndex], swapPersonIndex)
                         totalScore = sum(groupScoresCopy)
                         # Later only all options with the best score will be evaluated
                         # as we know at least one option score we can eliminate everything that
@@ -130,7 +158,7 @@ class GeneticSolver:
     def solve(self):
         rounds = []
         for round in range(0, self.numberOfRounds):
-            print("round: ", round)
+            print("Calculating round: ", round)
             groupOptions = self.generateRandomOptions(self.INITIAL_POPULATION)
             for i in range(0, self.GENERATIONS):
                 # print("Generation", i)
