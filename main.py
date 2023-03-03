@@ -1,5 +1,5 @@
 from GeneticSolver import GeneticSolver
-import timeit
+# import timeit
 
 
 def call():

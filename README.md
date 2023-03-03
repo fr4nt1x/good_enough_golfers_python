@@ -38,6 +38,7 @@ twice every mutation.
 
 ## TODO
 - [ ] implement avoided and discouraged pairings
+- [ ] return the sum of all weights for each pair in each group. (this would be an more usefull indicator than the returned round score )
 
 
 
